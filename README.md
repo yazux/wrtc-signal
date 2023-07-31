@@ -50,6 +50,18 @@ docker-compose -p demo -f docker/demo/docker-compose.yml up -d --build
 - Send auth WebSocket request and get token
 - Then use this token you can subscribe on events and send messages to server or use /demo page
 
+### Config with node
+
+- Make file `/public/scripts/config.js`
+- Write ice servers config (you can use `/public/scripts/config.example.js` file for example)
+
+### Config with Docker
+
+- Make file `/public/scripts/config.js`
+- Write ice servers config (you can use `/public/scripts/config.example.js` file for example)
+- Make file `/docker/local/.env`
+- Define env variable by example in file `/docker/local/.env.example`
+
 
 ## Endpoints
 
@@ -71,7 +83,16 @@ Parameters:
 | app      | String   | Yes     | Null          | App name         |
 | password | String   | Yes     | Null          | Backend password |
 
-    
+
+Request example:
+```bash
+curl \
+--location 'https://your-app-domain.com/app' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--data-urlencode 'app=demo-chat-test' \
+--data-urlencode 'password=demo-chat-password'
+```
+
 Response example
 ```json
 {
@@ -85,7 +106,6 @@ Response example
 
 
 ### WebSocket
-
 
 > Example with socket.io
 

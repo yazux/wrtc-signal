@@ -3,3 +3,5 @@ node_modules
 .env
 .bash_history
 *.log
+README.demo.md
+public/scripts/config.js

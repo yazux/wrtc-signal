@@ -1,6 +1,7 @@
 
 document.addEventListener('DOMContentLoaded', () => initChat())
 
+// example payload
 const MessagePayload  = {
     foo: 'bar'
 }
@@ -14,18 +15,7 @@ const initChat = () => {
         buttonJoin    = document.querySelector('#buttonJoin'),
         buttonCreate  = document.querySelector('#buttonCreate'),
         localVideoTitle = document.querySelector('#local-video-title'),
-        iceConfig = {
-            iceServers: [
-                {
-                    urls: 'stun:3.35.169.211'
-                },
-                {
-                    urls: 'turn:3.35.169.211',
-                    username: 'turnuser',
-                    credential: 'turnpass',
-                },
-            ]
-        }
+        iceConfig = window.env.iceConfig
 
     const onDeviceListChange = ({ videoDevices, audioDevices, audioSelect, videoSelect }) => {
         if (audioDevices && audioDevices.length) audioDevices.forEach(d => {
@@ -330,17 +320,15 @@ class Chat {
      * Getting MediaStream from user devices and return it
      * @returns Promise<MediaStream>
      */
-    async getStream() {
+    async getStream(flush = false) {
         // get audio and video inputs values
-        const { audio, video } = this.getSources(),
-        constraints = {
-            audio: { deviceId: audio ? {exact: audio} : undefined },
-            video: { deviceId: video ? {exact: video} : undefined }
-        }
+        const { audio, video } = this.getSources(), constraints = {}
+
+        if (audio) constraints.audio = { deviceId:  { exact: audio } }
+        if (video) constraints.video = { deviceId:  { exact: video } }
 
         // get audio + video stream from user devices
         const stream = await navigator?.mediaDevices.getUserMedia(constraints).catch(e => this.e(e)) ?? null
-        
         // if stream is not extist just set stream
         if (!this.stream) this.stream = stream ?? null
         // if stream already exist we can't just replace it - this is will break RTCStream
@@ -352,7 +340,7 @@ class Chat {
                 this.stream.removeTrack(track)
             });
             // add audio and video tracks from new stream to old stream
-            stream.getTracks().forEach(trask => this.stream.addTrack(trask))
+            stream.getTracks().forEach(track => this.stream.addTrack(track))
         }
 
         return this.stream
@@ -362,8 +350,8 @@ class Chat {
      * Restart local stream and update stream in RTCPeerConnection
      * @returns MediaStream
      */
-    async restartStream() {
-        await this.getStream()
+    async restartStream(flush = false) {
+        await this.getStream(flush)
         if (!this.stream) return
         this.emit('update-stream', this.stream)
 
@@ -453,14 +441,18 @@ class Chat {
 
         // When remote user start stream emit event about it to add his stream to page
         peer.onaddstream = (e) => this.emit('create-peer', { stream: e.stream, peer: id })
+
         // Listen state changes of RTCPeerConnection and close it if user was disconnected
         peer.onconnectionstatechange  = (e) => {
             if (peer.connectionState === 'disconnected') this.closePeer(id, room)
         }
         
-        // Add local stream tracks to RTCPeerConnection to send it to remote user
-        // when we will do it on remote client will fire 'onaddstream' event
         this.stream.getTracks().forEach(track => peer.addTrack(track, this.stream))
+
+        // This is required, because when at least one user have no video all stream will use only audio
+        // so we need force set config - we have video stream
+        peer.addTransceiver('video')
+        peer.addTransceiver('audio')
         
         // peer.ontrack = (event) => {} // I was use 'onaddstream' instead 'onaddstream'
         // Called when user successfully received his network device info to connect over RTC
@@ -488,7 +480,6 @@ class Chat {
      * @returns void
      */
     connectToPeers({ room, peers }) {
-        console.log({ room, peers })
         peers.forEach(peer => this.connectToPeer(peer, room))
     }
 
