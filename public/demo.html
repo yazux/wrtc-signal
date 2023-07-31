@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
+    <title>Video chat demo</title>
+    <link rel="stylesheet" href="/css/index.css" />
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
+  </head>
+  <body>
+    <div id="app">
+        <header class="header" id="header">
+            <div class="input">
+                <label for="audioSource">Audio source: </label>
+                <select id="audioSource"></select>
+            </div>
+        
+            <div class="input">
+                <label for="videoSource">Video source: </label>
+                <select id="videoSource"></select>
+            </div>
+
+            <div class="input">
+                <label for="roomName">Room</label>
+                <input type="text" value="test-room" id="roomName">
+            </div>
+
+            <button id="buttonJoin"   class="btn" type="button">Join to room</button>
+            <button id="buttonCreate" class="btn" type="button">Create room</button>
+        </header>
+
+        <div class="local video-box" id="local">
+            <video autoplay muted controls="" class="local-video" id="local-video"></video>
+            <span class="video-title" id="local-video-title"></span>
+        </div>
+        <div class="users-list" id="users-list"></div>
+    </div>
+    <script src="/scripts/index.js"></script>
+  </body>
+</html>

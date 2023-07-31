@@ -1,0 +1,91 @@
+version: '3.9'
+
+services:
+  
+  coturn:
+    image: coturn/coturn
+    container_name: chat-coturn
+    network_mode: "host"
+    command:
+      --log-file=stdout
+      -c /etc/coturn/turnserver.conf
+    volumes:
+      - ./coturn:/etc/coturn
+      - ./certbot/conf/:/ssl/:ro
+
+  redis:
+    image: redis
+    container_name: chat-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis:/data      
+    networks:
+      - chat-network
+
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - ./certbot/www/:/var/www/certbot/
+      - ./certbot/conf/:/etc/letsencrypt/
+
+  nginx:
+    image: nginx:latest
+    container_name: chat-nginx
+    working_dir: /var/www/
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./../../:/var/www
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/logs/:/var/log/nginx/
+      - ./certbot/www:/var/www/certbot/:ro
+      - ./certbot/conf/:/etc/nginx/ssl/:ro
+    networks:
+      - chat-network
+    depends_on:
+      - chat-app1
+      - chat-app2
+
+  chat-app1:
+    image: chat-app1
+    container_name: chat-app1
+    ports:
+      - "5001:5001"
+    environment:
+      - APP_PORT=5001
+      - APP_SECRET=gBl%b)i21#f!INd8=_^BK1n76d8
+      - REDIS_URL=redis://redis
+    build:
+      context: ./../../
+      dockerfile: ./docker/demo/.dockerfile
+    working_dir: /var/www/
+    networks:
+      - chat-network
+    depends_on:
+      - redis
+      - coturn
+
+  chat-app2:
+    image: chat-app2
+    container_name: chat-app2
+    ports:
+      - "5002:5002"
+    environment:
+      - APP_PORT=5002
+      - APP_SECRET=gBl%b)i21#f!INd8=_^BK1n76d8
+      - REDIS_URL=redis://redis
+    build:
+      context: ./../../
+      dockerfile: ./docker/demo/.dockerfile
+    working_dir: /var/www/
+    networks:
+      - chat-network
+    depends_on:
+      - redis
+      - coturn
+
+networks:
+  chat-network:
+    driver: bridge

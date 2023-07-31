@@ -1,0 +1,11 @@
+certbot/*
+!certbot/.keep
+
+coturn/*
+!coturn/turnserver.conf
+
+nginx/logs/*
+!nginx/logs/.keep
+
+redis/*
+!redis/.keep
