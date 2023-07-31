@@ -18,7 +18,7 @@ Supports signal layer and http api for authentication.
 ## Commands
 
 ```
-# no watching mode
+# No watching mode
 npm run run
 
 # Production mode with Docker
@@ -32,6 +32,10 @@ npm run pm-stop
 
 # Restart app (Production mode with pm2)
 npm run pm-restart
+
+# Run with docker
+docker-compose -p demo -f docker/demo/docker-compose.yml up -d --build
+
 ```
 
 ## How to run
@@ -55,29 +59,29 @@ npm run pm-restart
 
 ## API
 
-### Http
+### HTTP
 
 - **POST /app** - Adding application and receiving app token
 > This is forever lifetime token for one application. For example if you want use signal server from mobile app and web frontend you should get two tokens. First - for mobile app, second - for frontend web app. Do not call it every time for every connection.
 
-    Parameters:
+Parameters:
 
-    | Name     | Type     | Require | Default value | description      |
-    | -------- | -------- | ------- | ------------- | ---------------- |
-    | app      | String   | Yes     | Null          | App name         |
-    | password | String   | Yes     | Null          | Backend password |
+| Name     | Type     | Require | Default value | description      |
+| -------- | -------- | ------- | ------------- | ---------------- |
+| app      | String   | Yes     | Null          | App name         |
+| password | String   | Yes     | Null          | Backend password |
 
     
-    Response example
-    ```json
-    {
-        "status": 200,
-        "error": null,
-        "response": {
-            "token": "eyJh24gfb6bGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHAiO2f5iJkZW1sc32fvLWNo21cwsYXQifQ==.ffa9cd61db2383ad8bj850c79fd3e6fdef9da7abd4c028b22647cd312e179edf1aee71ebb"
-        }
+Response example
+```json
+{
+    "status": 200,
+    "error": null,
+    "response": {
+        "token": "eyJh24gfb6bGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHAiO2f5iJkZW1sc32fvLWNo21cwsYXQifQ==.ffa9cd61db2383ad8bj850c79fd3e6fdef9da7abd4c028b22647cd312e179edf1aee71ebb"
     }
-    ```
+}
+```
 
 
 ### WebSocket
@@ -150,13 +154,13 @@ socket.on('room-join-request', data => console.log(data))
 
 Parameters:
 
-| Name      | Type     | Require | Default value | description |
-| --------- | -------- | ------- | ------------- | ----------- |
-| app token | String   | Yes     | Null          | App token   |
+| Name  | Type     | Require | Default value | description |
+| ----- | -------- | ------- | ------------- | ----------- |
+| token | String   | Yes     | Null          | App token   |
 
 Example
 ```JavaScript
-socket.emit('auth-request', sessionToken)
+socket.emit('auth-request', { token: sessionToken })
 ```
 
 ### - room-create-request
@@ -517,8 +521,6 @@ socket.on('room-user-join', data => console.log(data))
 }
 */
 ```
-
----
 
 ---
 

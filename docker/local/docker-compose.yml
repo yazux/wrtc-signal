@@ -33,10 +33,9 @@ services:
     container_name: chat-app1
     ports:
       - "5001:5001"
+    env_file: .env
     environment:
       - APP_PORT=5001
-      - APP_SECRET=gBl%b)i21#f!INd8=_^BK1n76d8
-      - APP_PASS=a4sd3&21t5vV91?32
       - REDIS_URL=redis://redis
       - TOKEN_LIFETIME=86400
     build:
@@ -55,10 +54,9 @@ services:
     container_name: chat-app2
     ports:
       - "5002:5002"
+    env_file: .env
     environment:
       - APP_PORT=5002
-      - APP_SECRET=gBl%b)i21#f!INd8=_^BK1n76d8
-      - APP_PASS=a4sd3&21t5vV91?32
       - REDIS_URL=redis://redis
       - TOKEN_LIFETIME=86400
     build:

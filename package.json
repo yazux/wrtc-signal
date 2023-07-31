@@ -1,4 +1,5 @@
 {
+  "name": "web-rtc-signal-server",
   "scripts": {
     "run": "ts-node ./src/index.ts",
     "prod": "nodemon --watch src --exec 'ts-node' ./src/index.ts",

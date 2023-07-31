@@ -2,7 +2,7 @@ certbot/*
 !certbot/.keep
 
 coturn/*
-!coturn/turnserver.conf
+!coturn/turnserver.example.conf
 
 nginx/logs/*
 !nginx/logs/.keep
