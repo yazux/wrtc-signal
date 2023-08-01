@@ -127,7 +127,19 @@ export class Server {
      */
     private async getClusterRoomPeers(room: string = ''): Promise<Array<string>>
     {
-        return (await this.io.in(room).fetchSockets()).map((peer: RemoteSocket<DefaultEventsMap, any>) => peer.id)
+        return (await this.io.in(room).fetchSockets()).map((peer: RemoteSocket<DefaultEventsMap, any>) => peer?.id)
+    }
+
+    /**
+     * Returns list of peers info connected to all instances
+     * @param {string} room 
+     * @returns Promise<Record<string, any>>
+     */
+    private async getClusterRoomPeersInfo(room: string = ''): Promise<Record<string, any>>
+    {
+        const result: Record<string, any> = {};
+        (await this.io.in(room).fetchSockets()).forEach((peer: RemoteSocket<DefaultEventsMap, any>) => result[peer.id] = peer?.data)
+        return result
     }
 
     /**
@@ -156,6 +168,9 @@ export class Server {
      */
     private configureClientEvents(socket: Socket): void
     {
+        // Listen disconnecting event for notice all users in rooms
+        socket?.on('disconnecting', () => this.onConnectionClose(socket))
+
         const events: Record<string, string> = {}
         this.events.forEach((e: string) => {
             events[e] = ('on' + e.split('-').map((p: string) => p.charAt(0).toUpperCase() + p.slice(1)).join(''))
@@ -198,19 +213,32 @@ export class Server {
     }
 
     /**
+     * Calls when peer close ws connection
+     * @param {Socket} socket
+     * @returns void
+     */
+    onConnectionClose(socket: Socket): void
+    {
+        Array.from(socket.rooms)?.forEach((room: string) => {
+            this.io.to(room).except(socket.id).emit('room-user-leave', { room: room, peer_id: socket.id, peerinfo: socket?.data?.peerinfo })
+        })
+    }
+
+    /**
      * Calls when peer send auth request
-     * @param {Socket} socket 
+     * @param {Socket} socket
      * @param Record<string, any> data
      * @returns void
      */
     //@ts-expect-error
-    private onAuthRequest(socket: Socket, { token, payload }: { token: string, payload: any }): void
+    private onAuthRequest(socket: Socket, { token, payload, peerinfo }: { token: string, payload: any }): void
     {
         if (!TManager.verify(token)) {
             this.io.to(socket.id).emit('auth-reject', { message: 'Token is not valid', payload: payload })
             return
         }
 
+        if (peerinfo) socket.data = { peerinfo }
         const exp = parseInt(process.env.TOKEN_LIFETIME) || (60 * 60 * 24)
         this.io.to(socket.id).emit('auth-accept', {
             payload,
@@ -235,16 +263,18 @@ export class Server {
         socket.join(room)
 
         // Get all peers id from passed room
-        const peers = await this.getClusterRoomPeers(room)
+        const peers = await this.getClusterRoomPeersInfo(room)
+
         // Notice user about he was join to created room
         this.io.to(peer_id).emit('room-join-accept', {
-            room: room,
-            peer_id: peer_id,
-            peers: peers.filter(p => p !== peer_id),
-            payload: payload
+            room:      room,
+            peer_id:   peer_id,
+            peers:     Object.keys(peers).filter(p => p !== peer_id),
+            peersinfo: peers,
+            payload:   payload
         })
         // Notice other users in room about new user was doin to room
-        this.io.to(room).except(peer_id).emit('room-user-join', { room: room, peer_id: peer_id, payload })
+        this.io.to(room).except(peer_id).emit('room-user-join', { room: room, peer_id: peer_id, payload, peerinfo: socket?.data?.peerinfo })
     }
 
     /**
@@ -317,7 +347,7 @@ export class Server {
             return
         }
 
-        this.io.in(`${room}-owners`).except(socket.id).emit('room-join-request', { room: room, peer_id: socket.id, payload })
+        this.io.in(`${room}-owners`).except(socket.id).emit('room-join-request', { room: room, peer_id: socket.id, payload, peerinfo: socket?.data?.peerinfo })
     }
 
     /**

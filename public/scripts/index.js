@@ -71,6 +71,11 @@ const initChat = () => {
         window.chat.addPeer(data.peer_id, data.room)
     })
 
+    window.signal.on('room-user-leave', (data) => {
+        if (!data) return
+        window.chat.closePeer(data.peer_id, data.room);
+    })
+
     window.signal.on('room-joined', (data) => {
         if (!data) return
         window.chat.connectToPeers(data)
@@ -177,11 +182,18 @@ class Signal {
         this.socket.on('room-join-accept',  data => this.onRoomJoinAccept(data))
         this.socket.on('room-join-reject',  data => this.onRoomJoinReject(data))
 
-        this.socket.on('room-user-join', data => this.onRoomUserJoin(data))
+        this.socket.on('room-user-join',  data => this.onRoomUserJoin(data))
+        this.socket.on('room-user-leave', data => this.onRoomUserLeave(data))
     }
 
     auth() {
-        this.socket.emit('auth-request', { token: this.token, payload: MessagePayload });
+        this.socket.emit('auth-request', {
+            token: this.token,
+            payload: MessagePayload,
+            peerinfo: {
+                foo: 'bar'
+            }
+        });
     }
 
     onAuthAccept(data) {
@@ -230,10 +242,10 @@ class Signal {
         this.emit('room-rejected', data)
     }
 
-    onRoomJoinRequest({ peer_id, room }) {
-        if (confirm(`User ${peer_id} wants to join this room. Accept it?`))
-            this.emitSocket('room-join-accept', { peer_id: peer_id, to: peer_id, room, payload: MessagePayload })
-        else this.emitSocket('room-join-reject', { peer_id: peer_id, to: peer_id, room, payload: MessagePayload })
+    onRoomJoinRequest(data) {
+        if (confirm(`User ${data.peer_id} wants to join this room. Accept it?`))
+            this.emitSocket('room-join-accept',  { peer_id: data.peer_id, to: data.peer_id, room: data.room, payload: MessagePayload })
+        else this.emitSocket('room-join-reject', { peer_id: data.peer_id, to: data.peer_id, room: data.room, payload: MessagePayload })
     }
 
     onRoomJoinAccept(data) {
@@ -246,6 +258,10 @@ class Signal {
 
     onRoomUserJoin(data) {
         this.emit('room-user-join', data)
+    }
+
+    onRoomUserLeave(data) {
+        this.emit('room-user-leave', data)
     }
 }
 

@@ -150,7 +150,7 @@ See more information about it here:
 - [Stackoverflow discussion](https://stackoverflow.com/questions/24564877/what-do-these-numbers-mean-in-socket-io-payload)
 
 
-### Emits (ws messages emits from client)
+### Emits base info (ws messages emits from client)
 
 > In any emit you can send `payload` field, it will be send to related events. You can use this mechanism for transfer additional data between users over signal server. But don't abuse it, a long `payload` data will be rejected. Do not send secret data (tokens, passwords and another) over this method, only public data between roomates.
 
@@ -164,23 +164,39 @@ socket.on('room-join-request', data => console.log(data))
 /* output:
     {
         room: 'test-room',
-        payload: { user_login: 'foo' }
+        payload: { user_login: 'foo' },
+        peerinfo: { foo: 'bar' }
     }
 */
 ```
+
+> You can send `peerinfo` field in `auth-request` event. This information will add to current user socket peer and will be send with emits related with current user. For example with events `room-join-request`, `room-join-accept`, `room-user-join`, `room-user-leave`, `ice-candidate`, `session-description`. 
+
+### Emits (ws messages emits from client)
 
 ### - auth-request
 > Dispatched when user wants to auth his ws session
 
 Parameters:
 
-| Name  | Type     | Require | Default value | description |
-| ----- | -------- | ------- | ------------- | ----------- |
-| token | String   | Yes     | Null          | App token   |
+| Name     | Type   | Require | Default value | description |
+| -------- | ------ | ------- | ------------- | ----------- |
+| token    | String | Yes     | Null          | App token   |
+| peerinfo | Any    | No      | Null          | Any String or Object with current user info |
 
 Example
 ```JavaScript
-socket.emit('auth-request', { token: sessionToken })
+socket.emit('auth-request', {
+    token: sessionToken,
+    peerinfo: {
+        user_db_id: 10,
+        user_db_login: 'John Doe'
+    },
+    payload: {
+        foo: 'bar',
+        baz: 'ban'
+    }
+})
 ```
 
 ### - room-create-request
@@ -205,10 +221,10 @@ socket.emit('room-create-request', { room: 'test-room', auth: sessionToken })
 
 Parameters:
 
-| Name     | Type     | Require | Default value | description       |
-| -------- | -------- | ------- | ------------- | ----------------- |
-| auth     | String   | Yes     | Null          | User Auth token   |
-| room     | String   | Yes     | Null          | Room name to join |
+| Name     | Type   | Require | Default value | description       |
+| -------- | ------ | ------- | ------------- | ----------------- |
+| auth     | String | Yes     | Null          | User Auth token   |
+| room     | String | Yes     | Null          | Room name to join |
 
 Example
 ```JavaScript
@@ -449,10 +465,11 @@ socket.on('room-create-reject', data => console.log(data))
 
 Parameters:
 
-| Name    | Type   | description           | Example      |
-| ------- | ------ | --------------------- | ------------ |
-| room    | String | Room name             | Test room    |
-| peer_id | String | Remote user socket id | 123321123321 |
+| Name     | Type   | description           | Example        |
+| -------- | ------ | --------------------- | -------------- |
+| room     | String | Room name             | Test room      |
+| peer_id  | String | Remote user socket id | 123321123321   |
+| peerinfo | Any    | Remote user info      | { foo: 'bar' } |
 
 Example
 
@@ -461,7 +478,10 @@ socket.on('room-join-request', data => console.log(data))
 /* output:
 {
     room: 'test-room'
-    peer_id: '123321123321'
+    peer_id: '123321123321',
+    peerinfo: {
+        foo: 'bar'
+    }
 }
 */
 ```
@@ -473,11 +493,12 @@ socket.on('room-join-request', data => console.log(data))
 
 Parameters:
 
-| Name    | Type          | description                                 | Example                            |
-| ------- | ------------- | ------------------------------------------- | ---------------------------------- |
-| room    | String        | Room name                                   | Test room                          |
-| peer_id | String        | Local user socket id                        | 123321123321                       |
-| peers   | Array<String> | List of all remote users socket ids in room | ['1231231231231', '3453453453453'] |
+| Name      | Type                | description                                 | Example                            |
+| --------- | ------------------- | ------------------------------------------- | ---------------------------------- |
+| room      | String              | Room name                                   | Test room                          |
+| peer_id   | String              | Local user socket id                        | 123321123321                       |
+| peers     | Array<String>       | List of all remote users socket ids in room | ['1231231231231', '3453453453453'] |
+| peersinfo | Record<string, Any> | List of all remote users info in room       | { '1231231231231': { foo: 'bar' }, '3453453453453': { baz: 'ban' } } |
 
 Example
 
@@ -491,7 +512,12 @@ socket.on('room-join-accept', data => console.log(data))
         '1231231231231',
         '3453453453453',
         '5643567456756'
-    ]
+    ],
+    peersinfo: {
+        '1231231231231': { foo: 'bar' },
+        '3453453453453': { baz: 'ban' },
+        '5643567456756': { baz: 'ban' },
+    }
 }
 */
 ```
@@ -525,10 +551,11 @@ socket.on('room-join-reject', data => console.log(data))
 
 Parameters:
 
-| Name    | Type   | description           | Example      |
-| ------- | ------ | --------------------- | ------------ |
-| room    | String | Room name             | Test room    |
-| peer_id | String | Remote user socket id | 123321123321 |
+| Name     | Type   | description           | Example        |
+| -------- | ------ | --------------------- | -------------- |
+| room     | String | Room name             | Test room      |
+| peer_id  | String | Remote user socket id | 123321123321   |
+| peerinfo | Any    | Remote user info      | { foo: 'bar' } |
 
 Example
 
@@ -537,7 +564,38 @@ socket.on('room-user-join', data => console.log(data))
 /* output:
 {
     room: 'test-room'
-    peer_id: '123321123321'
+    peer_id: '123321123321',
+    peerinto: {
+        foo: 'bar'
+    }
+}
+*/
+```
+
+---
+
+### - room-user-leave
+> Dispatched when remote user leave from the room
+
+Parameters:
+
+| Name     | Type   | description           | Example        |
+| -------- | ------ | --------------------- | -------------- |
+| room     | String | Room name             | Test room      |
+| peer_id  | String | Remote user socket id | 123321123321   |
+| peerinfo | Any    | Remote user info      | { foo: 'bar' } |
+
+Example
+
+```JavaScript
+socket.on('room-user-leave', data => console.log(data))
+/* output:
+{
+    room: 'test-room'
+    peer_id: '123321123321',
+    peerinto: {
+        foo: 'bar'
+    }
 }
 */
 ```
@@ -554,6 +612,7 @@ Parameters:
 | room          | String | Room name                 | Test room                           |
 | peer_id       | String | Remote user socket id     | 123321123321                        |
 | ice_candidate | Object | Remote user ice candidate | { candidate: '', sdpMLineIndex: 0 } |
+| peerinfo      | Any    | Remote user info          | { foo: 'bar' }                      |
 
 Example
 
@@ -566,7 +625,10 @@ socket.on('ice-candidate', data => console.log(data))
     ice_candidate: {
         candidate: 'candidate:4248172766 1 udp 2122260223 162.14.76.3 62375 typ host generation 0 ufrag IEYX network-id 1'
         sdpMLineIndex: 0
-    } 
+    },
+    peerinfo: {
+        foo: 'bar'
+    }
 */
 ```
 
@@ -582,6 +644,7 @@ Parameters:
 | room                | String | Room name                       | Test room            |
 | peer_id             | String | Remote user socket id           | 123321123321         |
 | session_description | Object | Remote user session description | { sdp: '', type: 0 } |
+| peerinfo            | Any    | Remote user info                | { foo: 'bar' }       |
 
 Example
 
@@ -594,6 +657,9 @@ socket.on('session-description', data => console.log(data))
     session_description: {
         sdp: 'v=0\r\no=-...'
         type: 'offer'
-    } 
+    },
+    peerinfo: {
+        foo: 'bar'
+    }
 */
 ```
