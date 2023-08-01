@@ -384,7 +384,7 @@ Parameters:
 Example
 
 ```JavaScript
-socket.on('unauthorized', data => console.log(data))
+socket.on('auth-accept', data => console.log(data))
 /* output:
 {
     token: 'T123123qweqweqw.1213rr2qr23r2.23423234r23'
